@@ -10,45 +10,63 @@ module.exports = (env, argv) => {
         remotes: {
             designSystem: isDevelopment ? 'designSystem@http://localhost:3001/remoteEntry.js' : 'design-system',
             zds: `promise new Promise((resolve) => {
-            const remoteUrl = "http://localhost:3300/remoteEntry.js";
-            const script = document.createElement("script");
-            script.src = remoteUrl;
-            script.type = "text/javascript";
-            script.async = true;
-    
-            script.onload = () => {
-                if (window.zds) {
-                    resolve(window.zds); // 반드시 remote name과 동일해야 함
-                } else {
-                    reject(new Error("Container missing: window.zds not found"));
-                }
-            };
-    
-            script.onerror = () => {
-              console.warn("⚠ remoteEntry.js load failed, falling back to npm package");
-    
-              resolve({
-                get: (module) => {
-                  switch (module) {
-                    case "./FeButton":
-                      return () =>
-                        import("react-components-library-seed/FeButton").then((mod) => ({
-                          default: mod.default,
-                        }));
-                    default:
-                      console.error("❌ Unknown remote module:", module);
-                      return () =>
+                const url = "http://localhost:3300/remoteEntry.js";
+                const script = document.createElement("script");
+                script.src = url;
+          
+                script.onload = () => {
+                  if (window.zds) {
+                    resolve({
+                      get: (module) => {
+                        if (window.zds.get(module)) {
+                          return window.zds.get(module); // 정상 remote 모듈
+                        }
+          
+                        // 🛡️ 존재하지 않는 모듈 fallback
+                        console.warn("❌ Unknown remote module:", module);
+                        return () =>
+                          Promise.resolve({
+                            default: function Fallback() {
+                                return '⚠ Remote container missing';
+                            },
+                          });
+                      },
+                      init: (shareScope) => {
+                        try {
+                          return window.zds.init(shareScope);
+                        } catch (e) {
+                          console.warn("remote init error", e);
+                        }
+                      },
+                    });
+                  } else {
+                    resolve({
+                      get: () => () =>
                         Promise.resolve({
-                          default: () => '<div>⚠ Component unavailable</div>',
-                        });
+                          default: function Fallback() {
+                            return '⚠ Remote container missing';
+                          },
+                        }),
+                      init: () => {},
+                    });
                   }
-                },
-                init: () => {},
-              });
-            };
-    
-            document.head.appendChild(script);
-          })`,
+                };
+          
+                script.onerror = () => {
+                  console.warn("⚠ remoteEntry.js load failed");
+                  resolve({
+                    get: () => () =>
+                      Promise.resolve({
+                        default: function Fallback() {
+                            return '⚠ Remote container missing';
+                        },
+                      }),
+                    init: () => {},
+                  });
+                };
+          
+                document.head.appendChild(script);
+              })`,
         },
         shared: {
             react: { singleton: true, requiredVersion: '18.2.0', eager: true },
@@ -58,6 +76,9 @@ module.exports = (env, argv) => {
     return {
         entry: './src/index.js',
         mode: argv.mode,
+        resolve: {
+            extensions: [".tsx", ".ts", ".js", ".jsx"], // ts/tsx 포함
+        },
         devServer: {
             static: path.join(__dirname, 'dist'),
             port: 3100,

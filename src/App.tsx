@@ -1,10 +1,37 @@
-import React, { lazy, Suspense } from 'react';
+import React, { lazy, Suspense, useEffect } from 'react';
+import { ErrorBoundary } from "react-error-boundary";
 import { FeButton } from 'react-components-library-seed';
+
+interface FallbackProps {
+    error?: Error;
+    resetError?: () => void;
+}
+
+function ErrorFallback({ error, resetErrorBoundary }: any) {
+    return (
+      <div role="alert">
+        ⚠ Something went wrong loading remote.
+        <pre>{error.message}</pre>
+        <button onClick={resetErrorBoundary}>Try again</button>
+      </div>
+    );
+  }
+
 
 // 개발 모드에서는 모듈 페더레이션으로 컴포넌트를 가져옵니다.
 const RemoteButton = lazy(() => import('designSystem/Button'));
 const RemoteCard = lazy(() => import('designSystem/Card'));
 const RemoteFeButton = lazy(() => import('zds/FeButton'));
+// const RemoteFeButton = lazy(() => import('zds/FeButton1').then((result) => {
+//     console.log('result : ', result);
+//     return result
+// }).catch(() => {
+//     return <div>⚠ Remote container missing</div>
+// }).finally(() => {
+//     console.log('finally : ');
+// }));
+// const RemoteFeButton = lazy(() => loadRemoteModule('zds', './FeButton'));
+
 
 const App: React.FC = () => {
     return (
@@ -23,7 +50,15 @@ const App: React.FC = () => {
                 <div style={{ padding: '1rem', border: '2px solid #3b82f6', borderRadius: '0.5rem' }}>
                     <h2>ZDS Module Federation</h2>
                     <Suspense fallback={<div>Loading remote components...</div>}>
-                        <RemoteFeButton primary={true} label="ZDS버튼" onClick={() => alert('zds 원격 버튼이 클릭되었습니다!')}>원격 버튼</RemoteFeButton>
+                        <ErrorBoundary
+                            FallbackComponent={ErrorFallback}
+                            onReset={() => {
+                            // 필요시 리셋 로직
+                            console.log("Remote module reload attempt");
+                            }}
+                        >
+                            <RemoteFeButton primary={true} label="ZDS 버튼" />
+                        </ErrorBoundary>
                     </Suspense>
                 </div>
 
