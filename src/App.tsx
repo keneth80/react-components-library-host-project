@@ -1,5 +1,6 @@
 import React, { lazy, Suspense, useEffect } from 'react';
 import { ErrorBoundary } from "react-error-boundary";
+import loadable from '@loadable/component';
 import { FeButton } from 'react-components-library-seed';
 
 interface FallbackProps {
@@ -21,7 +22,10 @@ function ErrorFallback({ error, resetErrorBoundary }: any) {
 // 개발 모드에서는 모듈 페더레이션으로 컴포넌트를 가져옵니다.
 const RemoteButton = lazy(() => import('designSystem/Button'));
 const RemoteCard = lazy(() => import('designSystem/Card'));
-const RemoteFeButton = lazy(() => import('zds/FeButton'));
+// const RemoteFeButton = lazy(() => import('zds/FeButton'));
+const RemoteFeButton = loadable(() => import('zds/FeButton'), {
+    fallback: <div>Loading...</div>
+  });
 // const RemoteFeButton = lazy(() => import('zds/FeButton1').then((result) => {
 //     console.log('result : ', result);
 //     return result
@@ -49,17 +53,15 @@ const App: React.FC = () => {
 
                 <div style={{ padding: '1rem', border: '2px solid #3b82f6', borderRadius: '0.5rem' }}>
                     <h2>ZDS Module Federation</h2>
-                    <Suspense fallback={<div>Loading remote components...</div>}>
-                        <ErrorBoundary
-                            FallbackComponent={ErrorFallback}
-                            onReset={() => {
-                            // 필요시 리셋 로직
-                            console.log("Remote module reload attempt");
-                            }}
-                        >
-                            <RemoteFeButton primary={true} label="ZDS 버튼" />
-                        </ErrorBoundary>
-                    </Suspense>
+                    <ErrorBoundary
+                        FallbackComponent={ErrorFallback}
+                        onReset={() => {
+                        // 필요시 리셋 로직
+                        console.log("Remote module reload attempt");
+                        }}
+                    >
+                        <RemoteFeButton primary={true} label="ZDS 버튼" />
+                    </ErrorBoundary>
                 </div>
 
                 {/* npm 패키지로 로드된 컴포넌트 */}
