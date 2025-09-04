@@ -1,31 +1,23 @@
 const { ModuleFederationPlugin } = require('webpack').container;
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const path = require('path');
-const Dotenv = require('dotenv-webpack');
+const dotEnv = require('dotenv')
 
-const getRemoteUrl = (env) => {
-    switch (env) {
-      case 'production':
-        return 'https://kennethkang-design-system.netlify.app/mf/remoteentry.js';
-      default:
-        return 'http://localhost:3300/remoteEntry.js'; // 개발 환경 기본값
-    }
-};
+function loadEnvVars(isDevelopment) {
+    const envPath = isDevelopment ? './.env.development' : './.env.production';
+    dotEnv.config({ path: envPath });
+    return process.env;
+}
 
 module.exports = (env, argv) => {
     const isDevelopment = argv.mode === 'development';
-    const dotEnv = new Dotenv({
-        path: isDevelopment ? './.env.development' : './.env.production',
-        systemvars: true,
-    });
-    console.log('env : ', argv.mode, process.env.NODE_ENV, process.env.DESIGN_SYSTEM_URL);
-    const zdsRemoteUrl = getRemoteUrl(isDevelopment);
+    const envVars = loadEnvVars(isDevelopment);
     const moduleFederationCheck = new ModuleFederationPlugin({
         name: "host",
         remotes: {
             designSystem: isDevelopment ? 'designSystem@http://localhost:3001/remoteEntry.js' : 'design-system',
             zds: `promise new Promise((resolve) => {
-                const url = "${zdsRemoteUrl}";
+                const url = "${envVars.DESIGN_SYSTEM_URL}";
                 const script = document.createElement("script");
                 script.src = url;
           
@@ -114,7 +106,6 @@ module.exports = (env, argv) => {
             ],
         },
         plugins: [
-            dotEnv,
             moduleFederationCheck,
             // new ModuleFederationPlugin({
             //     name: 'template',
