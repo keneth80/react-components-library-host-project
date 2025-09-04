@@ -3,14 +3,29 @@ const HtmlWebpackPlugin = require('html-webpack-plugin');
 const path = require('path');
 const Dotenv = require('dotenv-webpack');
 
+const getRemoteUrl = (env) => {
+    switch (env) {
+      case 'production':
+        return 'https://kennethkang-design-system.netlify.app/mf/remoteentry.js';
+      default:
+        return 'http://localhost:3300/remoteEntry.js'; // 개발 환경 기본값
+    }
+};
+
 module.exports = (env, argv) => {
     const isDevelopment = argv.mode === 'development';
+    const dotEnv = new Dotenv({
+        path: isDevelopment ? './.env.development' : './.env.production',
+        systemvars: true,
+    });
+    console.log('env : ', argv.mode, process.env.NODE_ENV, process.env.DESIGN_SYSTEM_URL);
+    const zdsRemoteUrl = getRemoteUrl(isDevelopment);
     const moduleFederationCheck = new ModuleFederationPlugin({
         name: "host",
         remotes: {
             designSystem: isDevelopment ? 'designSystem@http://localhost:3001/remoteEntry.js' : 'design-system',
             zds: `promise new Promise((resolve) => {
-                const url = "http://localhost:3300/remoteEntry.js";
+                const url = "${zdsRemoteUrl}";
                 const script = document.createElement("script");
                 script.src = url;
           
@@ -72,7 +87,7 @@ module.exports = (env, argv) => {
             react: { singleton: true, requiredVersion: '18.2.0', eager: true },
             'react-dom': { singleton: true, requiredVersion: '18.2.0', eager: true },
         },
-      });
+    });
     return {
         entry: './src/index.js',
         mode: argv.mode,
@@ -99,9 +114,7 @@ module.exports = (env, argv) => {
             ],
         },
         plugins: [
-            new Dotenv({
-                path: isDevelopment ? './.env.development' : './.env.production',
-            }),
+            dotEnv,
             moduleFederationCheck,
             // new ModuleFederationPlugin({
             //     name: 'template',

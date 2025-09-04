@@ -1,6 +1,6 @@
-import React, { lazy, Suspense, useEffect } from 'react';
-import { ErrorBoundary } from "react-error-boundary";
+import React from 'react';
 import loadable from '@loadable/component';
+import { ErrorBoundary } from "react-error-boundary";
 import { FeButton } from 'react-components-library-seed';
 
 interface FallbackProps {
@@ -20,12 +20,16 @@ function ErrorFallback({ error, resetErrorBoundary }: any) {
 
 
 // 개발 모드에서는 모듈 페더레이션으로 컴포넌트를 가져옵니다.
-const RemoteButton = lazy(() => import('designSystem/Button'));
-const RemoteCard = lazy(() => import('designSystem/Card'));
+const RemoteButton = loadable(() => import('designSystem/Button'), {
+    fallback: <div>Loading remote components...</div>
+});
+const RemoteCard = loadable(() => import('designSystem/Card'), {
+    fallback: <div>Loading remote components...</div>
+});
 // const RemoteFeButton = lazy(() => import('zds/FeButton'));
 const RemoteFeButton = loadable(() => import('zds/FeButton'), {
     fallback: <div>Loading...</div>
-  });
+});
 // const RemoteFeButton = lazy(() => import('zds/FeButton1').then((result) => {
 //     console.log('result : ', result);
 //     return result
@@ -45,10 +49,8 @@ const App: React.FC = () => {
                 {/* Module Federation으로 로드된 컴포넌트 */}
                 <div style={{ padding: '1rem', border: '2px solid #3b82f6', borderRadius: '0.5rem' }}>
                     <h2>Module Federation</h2>
-                    <Suspense fallback={<div>Loading remote components...</div>}>
-                        <RemoteButton onClick={() => alert('디자인 시스템 원격 버튼이 클릭되었습니다!')}>원격 버튼</RemoteButton>
-                        <RemoteCard title='원격 카드'>이 카드는 런타임에 동적으로 로드됩니다.</RemoteCard>
-                    </Suspense>
+                    <RemoteButton onClick={() => alert('디자인 시스템 원격 버튼이 클릭되었습니다!')}>원격 버튼</RemoteButton>
+                    <RemoteCard title='원격 카드'>이 카드는 런타임에 동적으로 로드됩니다.</RemoteCard>
                 </div>
 
                 <div style={{ padding: '1rem', border: '2px solid #3b82f6', borderRadius: '0.5rem' }}>
